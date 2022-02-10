@@ -821,29 +821,29 @@ extension Socket {
     case clean
     /// An abnormal closure requested by the client
     case abnormal
-
+    
     init(closeCode: Int) {
-        switch closeCode {
-        case CloseCode.abnormal.rawValue:
-          self = .abnormal
-        default:
-          self = .clean
-        }
+      switch closeCode {
+      case CloseCode.abnormal.rawValue:
+        self = .abnormal
+      default:
+        self = .clean
+      }
     }
-
+    
     mutating func update(transportCloseCode: Int) {
-        switch self {
-        case .unknown, .clean:
-          // Allow transport layer to override these statuses.
-          self = .init(closeCode: transportCloseCode)
-        case .abnormal:
-          // Do not allow transport layer to override the abnormal close status.
-          // The socket itself should reset it on the next connection attempt.
-          // See `Socket.abnormalClose(_:)` for more information.
-          break
-        }
+      switch self {
+      case .unknown, .clean:
+        // Allow transport layer to override these statuses.
+        self = .init(closeCode: transportCloseCode)
+      case .abnormal:
+        // Do not allow transport layer to override the abnormal close status.
+        // The socket itself should reset it on the next connection attempt.
+        // See `Socket.abnormalClose(_:)` for more information.
+        break
+      }
     }
-
+    
     var shouldReconnect: Bool {
       switch self {
       case .unknown, .abnormal:
