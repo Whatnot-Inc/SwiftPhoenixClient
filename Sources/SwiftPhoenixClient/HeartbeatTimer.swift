@@ -94,7 +94,6 @@ class HeartbeatTimer {
     // Must be queued synchronously to prevent threading issues.
     queue.sync {[weak self] in
       // DispatchSourceTimer will automatically cancel when released
-        self?.temporaryTimer?.cancel()
         self?.temporaryTimer = nil
         self?.temporaryEventHandler = nil
     }
