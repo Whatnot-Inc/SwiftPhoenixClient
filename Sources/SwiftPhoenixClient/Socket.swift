@@ -154,14 +154,18 @@ public class Socket: PhoenixTransportDelegate {
     self.vsn = vsn
 
     self.reconnectTimer = TimeoutTimer()
-    self.reconnectTimer.callback.delegate(to: self) { (self) in
-      self.logItems("Socket attempting to reconnect")
-      self.teardown() { self.connect() }
-    }
+      let target = self
+      self.reconnectTimer.callback.delegate(to: target, with: { target, _ in
+          target.logItems("Socket attempting to reconnect")
+          target.teardown() {[weak self] in
+              self?.connect()
+          }
+      })
+
     self.reconnectTimer.timerCalculation
-      .delegate(to: self) { (self, tries) -> TimeInterval in
-        let interval = self.reconnectAfter(tries)
-        self.logItems("Socket reconnecting in \(interval)s")
+      .delegate(to: target) { (target, tries) -> TimeInterval in
+        let interval = target.reconnectAfter(tries)
+        target.logItems("Socket reconnecting in \(interval)s")
         return interval
     }
   }
