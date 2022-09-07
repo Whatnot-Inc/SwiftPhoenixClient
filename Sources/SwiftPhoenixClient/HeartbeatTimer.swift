@@ -72,8 +72,8 @@ class HeartbeatTimer {
   }
   
   func start(eventHandler: @escaping () -> Void) {
-    queue.sync {[weak self] in
-        guard let self = self else { return }
+    queue.sync {
+//        guard let self = self else { return }
       // Create a new DispatchSourceTimer, passing the event handler
       let timer = DispatchSource.makeTimerSource(flags: [], queue: queue)
       timer.setEventHandler(handler: eventHandler)
@@ -92,11 +92,11 @@ class HeartbeatTimer {
   
   func stop() {
     // Must be queued synchronously to prevent threading issues.
-    queue.sync {[weak self] in
+    queue.sync {
       // DispatchSourceTimer will automatically cancel when released
-        self?.temporaryTimer?.cancel()
-        self?.temporaryTimer = nil
-        self?.temporaryEventHandler = nil
+       temporaryTimer?.cancel()
+       temporaryTimer = nil
+       temporaryEventHandler = nil
     }
   }
   
