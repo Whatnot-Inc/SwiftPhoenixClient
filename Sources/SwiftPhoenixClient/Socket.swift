@@ -110,6 +110,8 @@ public class Socket: PhoenixTransportDelegate {
   public var enabledSSLCipherSuites: [SSLCipherSuite]?
   #endif
   
+  /// Collection on channels created for the Socket
+  public var channels: [Channel] = []
   
   //----------------------------------------------------------------------
   // MARK: - Private Attributes
@@ -117,8 +119,6 @@ public class Socket: PhoenixTransportDelegate {
   /// Callbacks for socket state changes
   var stateChangeCallbacks: StateChangeCallbacks = StateChangeCallbacks()
   
-  /// Collection on channels created for the Socket
-  var channels: [Channel] = []
   
   /// Buffers messages that need to be sent once the socket has connected. It is an array
   /// of tuples, with the ref of the message to send and the callback that will send the message.
