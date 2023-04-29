@@ -110,7 +110,8 @@ public class Socket: PhoenixTransportDelegate {
   public var enabledSSLCipherSuites: [SSLCipherSuite]?
   #endif
   
-  
+  public var hasChannels: Bool { channels.isEmpty == false }
+    
   //----------------------------------------------------------------------
   // MARK: - Private Attributes
   //----------------------------------------------------------------------
