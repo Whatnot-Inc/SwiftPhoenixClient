@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = "SwiftPhoenixClient"
-  s.version          = "5.0.0"
+  s.version          = "5.3.0"
   s.summary          = "Connect your Phoenix and iOS applications through WebSockets!"
   s.swift_version    = "5.0"
   s.description  = <<-EOS
@@ -25,10 +25,10 @@ Pod::Spec.new do |s|
   s.license          = { :type => "MIT", :file => "LICENSE" }
   s.author           = { "David Stump" => "david@davidstump.net" }
   s.source           = { :git => "https://github.com/davidstump/SwiftPhoenixClient.git", :tag => s.version.to_s }
-  s.ios.deployment_target     = '10.0'
-  s.osx.deployment_target     = '10.12'
-  s.tvos.deployment_target    = '10.0'
-  s.watchos.deployment_target = '3.0'
+  s.ios.deployment_target     = '11.0'
+  s.osx.deployment_target     = '10.13'
+  s.tvos.deployment_target    = '11.0'
+  s.watchos.deployment_target = '4.0'
 
   s.swift_version = '5.0'
   s.source_files  = "Sources/SwiftPhoenixClient/"

@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "631D1877259CE1D7005FAC0E"
-               BuildableName = "StarscreamSwiftPhoenixClient.framework"
-               BlueprintName = "StarscreamSwiftPhoenixClient"
+               BlueprintIdentifier = "125A9EE32543C82800292017"
+               BuildableName = "Basic.app"
+               BlueprintName = "Basic"
                ReferencedContainer = "container:SwiftPhoenixClient.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -40,6 +40,16 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "125A9EE32543C82800292017"
+            BuildableName = "Basic.app"
+            BlueprintName = "Basic"
+            ReferencedContainer = "container:SwiftPhoenixClient.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -47,15 +57,16 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <MacroExpansion>
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "631D1877259CE1D7005FAC0E"
-            BuildableName = "StarscreamSwiftPhoenixClient.framework"
-            BlueprintName = "StarscreamSwiftPhoenixClient"
+            BlueprintIdentifier = "125A9EE32543C82800292017"
+            BuildableName = "Basic.app"
+            BlueprintName = "Basic"
             ReferencedContainer = "container:SwiftPhoenixClient.xcodeproj">
          </BuildableReference>
-      </MacroExpansion>
+      </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

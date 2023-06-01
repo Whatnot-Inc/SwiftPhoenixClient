@@ -8,7 +8,6 @@
 
 import UIKit
 import SwiftPhoenixClient
-import StarscreamSwiftPhoenixClient
 
 /*
  Testing with Basic Chat
@@ -45,10 +44,11 @@ class BasicChatViewController: UIViewController {
   // MARK: - Child Views
   
   @IBOutlet weak var connectButton: UIButton!
+  
   @IBOutlet weak var messageField: UITextField!
   @IBOutlet weak var chatWindow: UITextView!
   
-  
+
   // MARK: - Variables
   let username: String = "Basic"
   var topic: String = "rooms:lobby"
@@ -57,9 +57,6 @@ class BasicChatViewController: UIViewController {
   
   // Test the URLSessionTransport
   let socket = Socket(endpoint)
-  
-  // Test the StarscreamTransport
-//  let socket = Socket(endPoint: endpoint, transport: { url in return StarscreamTransport(url: url) })
     
   var lobbyChannel: Channel!
   
@@ -87,11 +84,19 @@ class BasicChatViewController: UIViewController {
       }
     }
     
-    socket.delegateOnError(to: self) { (self, error) in
-      self.addText("Socket Errored: " + error.localizedDescription)
+    socket.delegateOnError(to: self) { (self, arg1) in
+      let (error, response) = arg1
+      
+      if let statusCode = (response as? HTTPURLResponse)?.statusCode, statusCode > 400 {
+        self.addText("Socket Errored: \(statusCode)")
+        self.socket.disconnect()
+      } else {
+        self.addText("Socket Errored: " + error.localizedDescription)
+      }
     }
     
     socket.logger = { msg in print("LOG:", msg) }
+    
   }
   
   
@@ -99,6 +104,7 @@ class BasicChatViewController: UIViewController {
   @IBAction func onConnectButtonPressed(_ sender: Any) {
     if socket.isConnected {
       disconnectAndLeave()
+      
     } else {
       connectAndJoin()
     }
@@ -120,8 +126,6 @@ class BasicChatViewController: UIViewController {
   }
   
   
-  
-  // MARK: - Private
   private func disconnectAndLeave() {
     //     Be sure the leave the channel or call socket.remove(lobbyChannel)
     lobbyChannel.leave()

@@ -75,9 +75,11 @@ public protocol PhoenixTransportDelegate {
   /**
    Notified when the `Transport` receives an error.
    
-   - Parameter error: Error from the underlying `Transport` implementation
+   - Parameter error: Client-side error from the underlying `Transport` implementation
+   - Parameter response: Response from the server, if any, that occurred with the Error
+   
    */
-  func onError(error: Error)
+  func onError(error: Error, response: URLResponse?)
   
   /**
    Notified when the `Transport` receives a message from the server.
@@ -90,8 +92,9 @@ public protocol PhoenixTransportDelegate {
    Notified when the `Transport` closes.
    
    - Parameter code: Code that was sent when the `Transport` closed
+   - Parameter reason: A concise human-readable prose explanation for the closure
    */
-  func onClose(code: Int)
+  func onClose(code: Int, reason: String?)
 }
 
 //----------------------------------------------------------------------
@@ -129,16 +132,16 @@ public enum PhoenixTransportReadyState {
  your own WebSocket library or implementation.
  */
 @available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
-public class URLSessionTransport: NSObject, PhoenixTransport, URLSessionWebSocketDelegate {
+open class URLSessionTransport: NSObject, PhoenixTransport, URLSessionWebSocketDelegate {
   
   
   /// The URL to connect to
   internal let url: URL
   
-  /// The URLSession configuratio
+  /// The URLSession configuration
   internal let configuration: URLSessionConfiguration
     
-  /// The underling URLsession. Assigned during `connect()`
+  /// The underling URLSession. Assigned during `connect()`
   private var session: URLSession? = nil
   
   /// The ongoing task. Assigned during `connect()`
@@ -188,19 +191,19 @@ public class URLSessionTransport: NSObject, PhoenixTransport, URLSessionWebSocke
   public var readyState: PhoenixTransportReadyState = .closed
   public var delegate: PhoenixTransportDelegate? = nil
   
-  public func connect() {
-    // Set the trasport state as connecting
+  open func connect() {
+    // Set the transport state as connecting
     self.readyState = .connecting
     
     // Create the session and websocket task
-    self.session = URLSession(configuration: self.configuration, delegate: self, delegateQueue: OperationQueue())
+    self.session = URLSession(configuration: self.configuration, delegate: self, delegateQueue: nil)
     self.task = self.session?.webSocketTask(with: url)
     
     // Start the task
     self.task?.resume()
   }
   
-  public func disconnect(code: Int, reason: String?) {
+  open func disconnect(code: Int, reason: String?) {
     /*
      TODO:
      1. Provide a "strict" mode that fails if an invalid close code is given
@@ -213,9 +216,10 @@ public class URLSessionTransport: NSObject, PhoenixTransport, URLSessionWebSocke
     
     self.readyState = .closing
     self.task?.cancel(with: closeCode, reason: reason?.data(using: .utf8))
+    self.session?.finishTasksAndInvalidate()
   }
   
-  public func send(data: Data) {
+  open func send(data: Data) {
     self.task?.send(.string(String(data: data, encoding: .utf8)!)) { (error) in
       // TODO: What is the behavior when an error occurs?
     }
@@ -223,9 +227,9 @@ public class URLSessionTransport: NSObject, PhoenixTransport, URLSessionWebSocke
   
   
   // MARK: - URLSessionWebSocketDelegate
-  public func urlSession(_ session: URLSession,
-                         webSocketTask: URLSessionWebSocketTask,
-                         didOpenWithProtocol protocol: String?) {
+  open func urlSession(_ session: URLSession,
+                       webSocketTask: URLSessionWebSocketTask,
+                       didOpenWithProtocol protocol: String?) {
     // The Websocket is connected. Set Transport state to open and inform delegate
     self.readyState = .open
     self.delegate?.onOpen()
@@ -234,35 +238,36 @@ public class URLSessionTransport: NSObject, PhoenixTransport, URLSessionWebSocke
     self.receive()
   }
   
-  public func urlSession(_ session: URLSession,
-                         webSocketTask: URLSessionWebSocketTask,
-                         didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
-                         reason: Data?) {
+  open func urlSession(_ session: URLSession,
+                       webSocketTask: URLSessionWebSocketTask,
+                       didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
+                       reason: Data?) {
     // A close frame was received from the server.
     self.readyState = .closed
-    self.delegate?.onClose(code: closeCode.rawValue)
+    self.delegate?.onClose(code: closeCode.rawValue, reason: reason.flatMap { String(data: $0, encoding: .utf8) })
   }
   
-  public func urlSession(_ session: URLSession,
-                         task: URLSessionTask,
-                         didCompleteWithError error: Error?) {
+  open func urlSession(_ session: URLSession,
+                       task: URLSessionTask,
+                       didCompleteWithError error: Error?) {
     // The task has terminated. Inform the delegate that the transport has closed abnormally
     // if this was caused by an error.
     guard let err = error else { return }
-    self.abnormalErrorReceived(err)
+    
+    self.abnormalErrorReceived(err, response: task.response)
   }
   
   
   // MARK: - Private
   private func receive() {
-    self.task?.receive { result in
+    self.task?.receive { [weak self] result in
       switch result {
       case .success(let message):
         switch message {
         case .data:
           print("Data received. This method is unsupported by the Client")
         case .string(let text):
-          self.delegate?.onMessage(message: text)
+          self?.delegate?.onMessage(message: text)
         default:
           fatalError("Unknown result was received. [\(result)]")
         }
@@ -270,27 +275,24 @@ public class URLSessionTransport: NSObject, PhoenixTransport, URLSessionWebSocke
         // Since `.receive()` is only good for a single message, it must
         // be called again after a message is received in order to
         // received the next message.
-        self.receive()
+        self?.receive()
       case .failure(let error):
         print("Error when receiving \(error)")
-        self.abnormalErrorReceived(error)
+        self?.abnormalErrorReceived(error, response: nil)
       }
     }
   }
   
-  private func abnormalErrorReceived(_ error: Error) {
+  private func abnormalErrorReceived(_ error: Error, response: URLResponse?) {
     // Set the state of the Transport to closed
     self.readyState = .closed
     
     // Inform the Transport's delegate that an error occurred.
-    self.delegate?.onError(error: error)
+    self.delegate?.onError(error: error, response: response)
     
     // An abnormal error is results in an abnormal closure, such as internet getting dropped
     // so inform the delegate that the Transport has closed abnormally. This will kick off
     // the reconnect logic.
-    self.delegate?.onClose(code: Socket.CloseCode.abnormal.rawValue)
+    self.delegate?.onClose(code: Socket.CloseCode.abnormal.rawValue, reason: error.localizedDescription)
   }
 }
-
-
-

@@ -31,7 +31,7 @@ class ChannelSpec: QuickSpec {
     
     /// Utility method to easily filter the bindings for a channel by their event
     func getBindings(_ event: String) -> [Binding]? {
-      return channel.bindingsDel.filter({ $0.event == event })
+      return channel.syncBindingsDel.filter({ $0.event == event })
     }
     
     
@@ -640,7 +640,7 @@ class ChannelSpec: QuickSpec {
         let mockPush = PushMock(channel: channel, event: "event")
         channel.joinPush = mockPush
         
-        spySocket.onConnectionError(TestError.stub)
+        spySocket.onConnectionError(TestError.stub, response: nil)
         
         fakeClock.tick(1.0)
         expect(mockPush.sendCallsCount).to(equal(0))
@@ -657,7 +657,7 @@ class ChannelSpec: QuickSpec {
         let mockPush = PushMock(channel: channel, event: "event")
         channel.joinPush = mockPush
         
-        spySocket.onConnectionError(TestError.stub)
+        spySocket.onConnectionError(TestError.stub, response: nil)
         
         fakeClock.tick(1.0)
         expect(mockPush.sendCallsCount).to(equal(0))
