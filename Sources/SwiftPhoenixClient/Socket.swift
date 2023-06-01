@@ -31,9 +31,6 @@ public enum SocketError: Error {
 /// Alias for a JSON dictionary [String: Any]
 public typealias Payload = [String: Any]
 
-/// Alias for a function returning an optional JSON dictionary (`Payload?`)
-public typealias PayloadClosure = () -> Payload?
-
 /// Struct that gathers callbacks assigned to the Socket
 struct StateChangeCallbacks {
   var open: [(ref: String, callback: Delegated<Void, Void>)] = []
@@ -68,23 +65,7 @@ public class Socket: PhoenixTransportDelegate {
   /// include `"/websocket"` if missing.
   public let endPoint: String
 
-  /// The fully qualified socket URL
-  public private(set) var endPointUrl: URL
-  
-  /// Resolves to return the `paramsClosure` result at the time of calling.
-  /// If the `Socket` was created with static params, then those will be
-  /// returned every time.
-  public var params: Payload? {
-    return self.paramsClosure?()
-  }
-  
-  /// The optional params closure used to get params when connecting. Must
-  /// be set when initializing the Socket.
-  public let paramsClosure: PayloadClosure?
-  
-  /// The WebSocket transport. Default behavior is to provide a
-  /// URLSessionWebsocketTask. See README for alternatives.
-  private let transport: ((URL) -> PhoenixTransport)
+  public let configurator: (@escaping (URLSessionConfiguration, Payload?) -> Void) -> Void
 
   /// Phoenix serializer version, defaults to "2.0.0"
   public let vsn: String
@@ -168,38 +149,12 @@ public class Socket: PhoenixTransportDelegate {
   //----------------------------------------------------------------------
   // MARK: - Initialization
   //----------------------------------------------------------------------
-  @available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
-  public convenience init(_ endPoint: String,
-                          params: Payload? = nil,
-                          vsn: String = Defaults.vsn) {
-    self.init(endPoint: endPoint,
-              transport: { url in return URLSessionTransport(url: url) },
-              paramsClosure: { params },
-              vsn: vsn)
-  }
-
-  @available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
-  public convenience init(_ endPoint: String,
-                          paramsClosure: PayloadClosure?,
-                          vsn: String = Defaults.vsn) {
-    self.init(endPoint: endPoint,
-              transport: { url in return URLSessionTransport(url: url) },
-              paramsClosure: paramsClosure,
-              vsn: vsn)
-  }
-  
-  
   public init(endPoint: String,
-       transport: @escaping ((URL) -> PhoenixTransport),
-       paramsClosure: PayloadClosure? = nil,
-       vsn: String = Defaults.vsn) {
-    self.transport = transport
-    self.paramsClosure = paramsClosure
+              configurator: @escaping (@escaping (URLSessionConfiguration, Payload?) -> Void) -> Void,
+              vsn: String = Defaults.vsn) {
     self.endPoint = endPoint
+    self.configurator = configurator
     self.vsn = vsn
-    self.endPointUrl = Socket.buildEndpointUrl(endpoint: endPoint,
-                                               paramsClosure: paramsClosure,
-                                               vsn: vsn)
 
     self.reconnectTimer = TimeoutTimer()
     self.reconnectTimer.callback.delegate(to: self) { (self) in
@@ -221,15 +176,6 @@ public class Socket: PhoenixTransportDelegate {
   //----------------------------------------------------------------------
   // MARK: - Public
   //----------------------------------------------------------------------
-  /// - return: The socket protocol, wss or ws
-  public var websocketProtocol: String {
-    switch endPointUrl.scheme {
-    case "https": return "wss"
-    case "http": return "ws"
-    default: return endPointUrl.scheme ?? ""
-    }
-  }
-  
   /// - return: True if the socket is connected
   public var isConnected: Bool {
     return self.connectionState == .open
@@ -244,6 +190,10 @@ public class Socket: PhoenixTransportDelegate {
   /// will be sent through the connection. If the Socket is already connected,
   /// then this call will be ignored.
   public func connect() {
+    guard #available(iOS 13, *) else {
+        fatalError("Unsupported OS version")
+    }
+
     // Do not attempt to reconnect if the socket is currently connected
     guard !isConnected else { return }
     
@@ -252,21 +202,15 @@ public class Socket: PhoenixTransportDelegate {
 
     // We need to build this right before attempting to connect as the
     // parameters could be built upon demand and change over time
-    self.endPointUrl = Socket.buildEndpointUrl(endpoint: self.endPoint,
-                                               paramsClosure: self.paramsClosure,
-                                               vsn: vsn)
-
-    self.connection = self.transport(self.endPointUrl)
-    self.connection?.delegate = self
-//    self.connection?.disableSSLCertValidation = disableSSLCertValidation
-//
-//    #if os(Linux)
-//    #else
-//    self.connection?.security = security
-//    self.connection?.enabledSSLCipherSuites = enabledSSLCipherSuites
-//    #endif
-    
-    self.connection?.connect()
+    self.configurator { [weak self] urlSessionConfig, payload in
+        guard let self = self else { return }
+        let endpointUrl = Socket.buildEndpointUrl(endpoint: self.endPoint,
+                                                  payload: payload,
+                                                  vsn: self.vsn)
+        self.connection = URLSessionTransport(url: endpointUrl, configuration: urlSessionConfig)
+        self.connection?.delegate = self
+        self.connection?.connect()
+    }
   }
   
   /// Disconnects the socket
@@ -705,7 +649,7 @@ public class Socket: PhoenixTransportDelegate {
   }
 
   /// Builds a fully qualified socket `URL` from `endPoint` and `params`.
-  internal static func buildEndpointUrl(endpoint: String, paramsClosure params: PayloadClosure?, vsn: String) -> URL {
+    internal static func buildEndpointUrl(endpoint: String, payload: Payload?, vsn: String) -> URL {
     guard
       let url = URL(string: endpoint),
       var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false)
@@ -726,7 +670,7 @@ public class Socket: PhoenixTransportDelegate {
     urlComponents.queryItems = [URLQueryItem(name: "vsn", value: vsn)]
 
     // If there are parameters, append them to the URL
-    if let params = params?() {
+    if let params = payload {
       urlComponents.queryItems?.append(contentsOf: params.map {
         URLQueryItem(name: $0.key, value: String(describing: $0.value))
       })
@@ -825,6 +769,9 @@ public class Socket: PhoenixTransportDelegate {
   }
   
   public func onClose(code: Int, reason: String? = nil) {
+    if code == CloseCode.normal.rawValue && self.closeStatus == .abnormal {
+      self.logItems("transport", "server confirmed client-initiated abnormal close")
+    }
     self.closeStatus.update(transportCloseCode: code)
     self.onConnectionClosed(code: code, reason: reason)
   }
