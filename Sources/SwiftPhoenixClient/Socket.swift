@@ -33,7 +33,7 @@ public typealias Payload = [String: Any]
 
 /// Struct that gathers callbacks assigned to the Socket
 struct StateChangeCallbacks {
-  var open: [(ref: String, callback: Delegated<(URLResponse?, String?), Void>)] = []
+  var open: [(ref: String, callback: Delegated<(URLResponse?), Void>)] = []
   var close: [(ref: String, callback: Delegated<(Int, String?), Void>)] = []
   var error: [(ref: String, callback: Delegated<(Error, URLResponse?), Void>)] = []
   var message: [(ref: String, callback: Delegated<Message, Void>)] = []
@@ -260,7 +260,7 @@ public class Socket: PhoenixTransportDelegate {
   /// - parameter callback: Called when the Socket is opened
   @discardableResult
   public func onOpen(callback: @escaping () -> Void) -> String {
-    return self.onOpen { _, _ in callback() }
+    return self.onOpen { _ in callback() }
   }
   
   /// Registers callbacks for connection open events. Does not handle retain
@@ -268,14 +268,14 @@ public class Socket: PhoenixTransportDelegate {
   ///
   /// Example:
   ///
-  ///     socket.onOpen() { [weak self] response, handshakeProtocol in
+  ///     socket.onOpen() { [weak self] response in
   ///         self?.print("Socket Connection Open")
   ///     }
   ///
   /// - parameter callback: Called when the Socket is opened
   @discardableResult
-  public func onOpen(callback: @escaping (URLResponse?, String?) -> Void) -> String {
-    var delegated = Delegated<(URLResponse?, String?), Void>()
+  public func onOpen(callback: @escaping (URLResponse?) -> Void) -> String {
+    var delegated = Delegated<(URLResponse?), Void>()
     delegated.manuallyDelegate(with: callback)
     
     return self.append(callback: delegated, to: &self.stateChangeCallbacks.open)
@@ -303,7 +303,7 @@ public class Socket: PhoenixTransportDelegate {
   ///
   /// Example:
   ///
-  ///     socket.delegateOnOpen(to: self) { self, response, handshakeProtocol in
+  ///     socket.delegateOnOpen(to: self) { self, response in
   ///         self.print("Socket Connection Open")
   ///     }
   ///
@@ -311,8 +311,8 @@ public class Socket: PhoenixTransportDelegate {
   /// - parameter callback: Called when the Socket is opened
   @discardableResult
   public func delegateOnOpen<T: AnyObject>(to owner: T,
-                                           callback: @escaping ((T, (URLResponse?, String?)) -> Void)) -> String {
-    var delegated = Delegated<(URLResponse?, String?), Void>()
+                                           callback: @escaping ((T, (URLResponse?)) -> Void)) -> String {
+    var delegated = Delegated<(URLResponse?), Void>()
     delegated.delegate(to: owner, with: callback)
     
     return self.append(callback: delegated, to: &self.stateChangeCallbacks.open)
@@ -584,7 +584,7 @@ public class Socket: PhoenixTransportDelegate {
   // MARK: - Connection Events
   //----------------------------------------------------------------------
   /// Called when the underlying Websocket connects to it's host
-  internal func onConnectionOpen(response: URLResponse?, handshakeProtocol: String?) {
+  internal func onConnectionOpen(response: URLResponse?) {
     self.logItems("transport", "Connected to \(endPoint)")
     
     // Reset the close status now that the socket has been connected
@@ -600,7 +600,7 @@ public class Socket: PhoenixTransportDelegate {
     self.resetHeartbeat()
     
     // Inform all onOpen callbacks that the Socket has opened
-    self.stateChangeCallbacks.open.forEach({ $0.callback.call((response, handshakeProtocol)) })
+    self.stateChangeCallbacks.open.forEach({ $0.callback.call((response)) })
   }
   
   internal func onConnectionClosed(code: Int, reason: String?) {
@@ -788,8 +788,8 @@ public class Socket: PhoenixTransportDelegate {
   //----------------------------------------------------------------------
   // MARK: - TransportDelegate
   //----------------------------------------------------------------------
-  public func onOpen(response: URLResponse?, handshakeProtocol: String?) {
-      self.onConnectionOpen(response: response, handshakeProtocol: handshakeProtocol)
+  public func onOpen(response: URLResponse?) {
+      self.onConnectionOpen(response: response)
   }
   
   public func onError(error: Error, response: URLResponse?) {

@@ -71,9 +71,8 @@ public protocol PhoenixTransportDelegate {
    Notified when the `Transport` opens.
    
    - Parameter response: Response from the server indicating that the WebSocket handshake was successful and the connection has been upgraded to webSockets
-   - Parameter handshakeProtocol: The protocol that is picked in the handshake
    */
-  func onOpen(response: URLResponse?, handshakeProtocol: String?)
+  func onOpen(response: URLResponse?)
   
   /**
    Notified when the `Transport` receives an error.
@@ -232,10 +231,10 @@ open class URLSessionTransport: NSObject, PhoenixTransport, URLSessionWebSocketD
   // MARK: - URLSessionWebSocketDelegate
   open func urlSession(_ session: URLSession,
                        webSocketTask: URLSessionWebSocketTask,
-                       didOpenWithProtocol aProtocol: String?) {
+                       didOpenWithProtocol protocol: String?) {
     // The Websocket is connected. Set Transport state to open and inform delegate
     self.readyState = .open
-    self.delegate?.onOpen(response: webSocketTask.response, handshakeProtocol: aProtocol)
+    self.delegate?.onOpen(response: webSocketTask.response)
     
     // Start receiving messages
     self.receive()
