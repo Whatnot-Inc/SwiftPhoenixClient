@@ -789,7 +789,7 @@ public class Socket: PhoenixTransportDelegate {
   // MARK: - TransportDelegate
   //----------------------------------------------------------------------
   public func onOpen(response: URLResponse?) {
-      self.onConnectionOpen(response: response)
+    self.onConnectionOpen(response: response)
   }
   
   public func onError(error: Error, response: URLResponse?) {
