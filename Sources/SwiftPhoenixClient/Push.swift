@@ -37,6 +37,9 @@ public class Push {
   /// The push timeout. Default is 10.0 seconds
   public var timeout: TimeInterval
   
+  /// Time interval between sending the push and receiving a response
+  public private(set) var roundTripTime: TimeInterval?
+  
   /// The server's response to the Push
   var receivedMessage: Message?
   
@@ -58,6 +61,8 @@ public class Push {
   /// The event that is associated with the reference ID of the Push
   var refEvent: String?
   
+  /// Date push was sent to server
+  private var sentToServerDate: Date?
   
   
   /// Initializes a Push
@@ -104,7 +109,9 @@ public class Push {
       payload: self.payload,
       ref: self.ref,
       joinRef: channel?.joinRef
-    )
+    ) { [weak self] in
+        self?.sentToServerDate = Date()
+    }
   }
   
   /// Receive a specific event when sending an Outbound message. Subscribing
@@ -232,6 +239,7 @@ public class Push {
       self.cancelRefEvent()
       self.cancelTimeout()
       self.receivedMessage = message
+      self.roundTripTime = self.sentToServerDate.flatMap { Date().timeIntervalSince($0) }
       
       /// Check if there is event a status available
       guard let status = message.status else { return }
