@@ -542,11 +542,13 @@ public class Socket: PhoenixTransportDelegate {
   /// - parameter payload:
   /// - parameter ref: Optional. Defaults to nil
   /// - parameter joinRef: Optional. Defaults to nil
+  /// - parameter didSendDataToServer: Called when the data has been sent to the server
   internal func push(topic: String,
                      event: String,
                      payload: Payload,
                      ref: String? = nil,
-                     joinRef: String? = nil) {
+                     joinRef: String? = nil,
+                     didSendDataToServer: (() -> Void)? = nil) {
     
     let callback: (() throws -> ()) = {
       let body: [Any?] = [joinRef, ref, topic, event, payload]
@@ -554,6 +556,7 @@ public class Socket: PhoenixTransportDelegate {
       
       self.logItems("push", "Sending \(String(data: data, encoding: String.Encoding.utf8) ?? "")" )
       self.connection?.send(data: data)
+      didSendDataToServer?()
     }
     
     /// If the socket is connected, then execute the callback immediately.
