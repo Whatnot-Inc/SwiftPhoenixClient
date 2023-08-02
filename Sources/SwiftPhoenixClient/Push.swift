@@ -192,6 +192,8 @@ public class Push {
     self.refEvent = nil
     self.receivedMessage = nil
     self.sent = false
+    self.sentToServerDate = nil
+    self.roundTripTime = nil
   }
   
   
