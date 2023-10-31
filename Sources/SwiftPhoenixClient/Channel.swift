@@ -479,10 +479,14 @@ public class Channel {
   ////
   ///     channel.leave().receive("ok") { _ in { print("left") }
   ///
+  /// - parameter payload: Optional payload to pass along with the event
   /// - parameter timeout: Optional timeout
   /// - return: Push that can add receive hooks
   @discardableResult
-  public func leave(timeout: TimeInterval = Defaults.timeoutInterval) -> Push {
+  public func leave(
+    payload: Payload = [:],
+    timeout: TimeInterval = Defaults.timeoutInterval
+  ) -> Push {
     // If attempting a rejoin during a leave, then reset, cancelling the rejoin
     self.rejoinTimer.reset()
     
@@ -501,6 +505,7 @@ public class Channel {
     // Push event to send to the server
     let leavePush = Push(channel: self,
                          event: ChannelEvent.leave,
+                         payload: payload,
                          timeout: timeout)
     
     // Perform the same behavior if successfully left the channel
