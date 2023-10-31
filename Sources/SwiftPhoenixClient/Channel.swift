@@ -172,6 +172,7 @@ public class Channel {
       // Send a Push to the server to leave the channel
       let leavePush = Push(channel: self,
                            event: ChannelEvent.leave,
+                           payload: params,
                            timeout: self.timeout)
       leavePush.send()
       
