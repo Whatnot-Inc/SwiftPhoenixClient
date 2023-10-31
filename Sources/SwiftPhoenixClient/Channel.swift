@@ -63,7 +63,7 @@ public class Channel {
   /// The topic of the Channel. e.g. "rooms:friends"
   public let topic: String
   
-  /// The params sent when joining the channel
+  /// The params sent when joining and leaving the channel
   public var params: Payload {
     didSet { self.joinPush.payload = params }
   }
@@ -172,6 +172,7 @@ public class Channel {
       // Send a Push to the server to leave the channel
       let leavePush = Push(channel: self,
                            event: ChannelEvent.leave,
+                           payload: params,
                            timeout: self.timeout)
       leavePush.send()
       
@@ -501,6 +502,7 @@ public class Channel {
     // Push event to send to the server
     let leavePush = Push(channel: self,
                          event: ChannelEvent.leave,
+                         payload: params,
                          timeout: timeout)
     
     // Perform the same behavior if successfully left the channel
