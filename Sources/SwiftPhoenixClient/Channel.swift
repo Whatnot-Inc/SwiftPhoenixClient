@@ -63,7 +63,7 @@ public class Channel {
   /// The topic of the Channel. e.g. "rooms:friends"
   public let topic: String
   
-  /// The params sent when joining the channel
+  /// The params sent when joining and leaving the channel
   public var params: Payload {
     didSet { self.joinPush.payload = params }
   }
