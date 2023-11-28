@@ -141,7 +141,7 @@ public class Channel {
     
     // Setup Push Event to be sent when joining
     self.joinPush = Push(channel: self,
-                         event: ChannelEvent.join,
+                         event: "bajo-jajo",
                          payload: self.params,
                          timeout: self.timeout)
     
