@@ -36,10 +36,10 @@ public typealias PayloadClosure = () -> Payload?
 
 /// Struct that gathers callbacks assigned to the Socket
 struct StateChangeCallbacks {
-  var open: [(ref: String, callback: Delegated<(URLResponse?), Void>)] = []
-  var close: [(ref: String, callback: Delegated<(Int, String?), Void>)] = []
-  var error: [(ref: String, callback: Delegated<(Error, URLResponse?), Void>)] = []
-  var message: [(ref: String, callback: Delegated<Message, Void>)] = []
+    var open: SynchronizedArray<(ref: String, callback: Delegated<URLResponse?, Void>)> = .init()
+    var close: SynchronizedArray<(ref: String, callback: Delegated<(Int, String?), Void>)> = .init()
+    var error: SynchronizedArray<(ref: String, callback: Delegated<(Error, URLResponse?), Void>)> = .init()
+    var message: SynchronizedArray<(ref: String, callback: Delegated<Message, Void>)> = .init()
 }
 
 
@@ -97,6 +97,9 @@ public class Socket: PhoenixTransportDelegate {
   
   /// Timeout to use when opening connections
   public var timeout: TimeInterval = Defaults.timeoutInterval
+    
+  /// Custom headers to be added to the socket connection request
+  public var headers: [String : Any] = [:]
   
   /// Interval between sending a heartbeat
   public var heartbeatInterval: TimeInterval = Defaults.heartbeatInterval
@@ -266,7 +269,7 @@ public class Socket: PhoenixTransportDelegate {
 //    self.connection?.enabledSSLCipherSuites = enabledSSLCipherSuites
 //    #endif
     
-    self.connection?.connect()
+    self.connection?.connect(with: self.headers)
   }
   
   /// Disconnects the socket
@@ -331,7 +334,7 @@ public class Socket: PhoenixTransportDelegate {
   /// - parameter callback: Called when the Socket is opened
   @discardableResult
   public func onOpen(callback: @escaping (URLResponse?) -> Void) -> String {
-    var delegated = Delegated<(URLResponse?), Void>()
+    var delegated = Delegated<URLResponse?, Void>()
     delegated.manuallyDelegate(with: callback)
     
     return self.append(callback: delegated, to: &self.stateChangeCallbacks.open)
@@ -367,8 +370,8 @@ public class Socket: PhoenixTransportDelegate {
   /// - parameter callback: Called when the Socket is opened
   @discardableResult
   public func delegateOnOpen<T: AnyObject>(to owner: T,
-                                           callback: @escaping ((T, (URLResponse?)) -> Void)) -> String {
-    var delegated = Delegated<(URLResponse?), Void>()
+                                           callback: @escaping ((T, URLResponse?) -> Void)) -> String {
+    var delegated = Delegated<URLResponse?, Void>()
     delegated.delegate(to: owner, with: callback)
     
     return self.append(callback: delegated, to: &self.stateChangeCallbacks.open)
@@ -521,7 +524,7 @@ public class Socket: PhoenixTransportDelegate {
     return self.append(callback: delegated, to: &self.stateChangeCallbacks.message)
   }
   
-  private func append<T>(callback: T, to array: inout [(ref: String, callback: T)]) -> String {
+  private func append<T>(callback: T, to array: inout SynchronizedArray<(ref: String, callback: T)>) -> String {
     let ref = makeRef()
     array.append((ref, callback))
     return ref
@@ -604,7 +607,8 @@ public class Socket: PhoenixTransportDelegate {
                      ref: String? = nil,
                      joinRef: String? = nil) {
     
-    let callback: (() throws -> ()) = {
+    let callback: (() throws -> ()) = { [weak self] in
+      guard let self else { return }
       let body: [Any?] = [joinRef, ref, topic, event, payload]
       let data = self.encode(body)
       
