@@ -1,3 +1,7 @@
+# Whatnot fork
+
+The iOS app no longer uses this fork and it is going to be removed.
+
 # Swift Phoenix Client
 
 [![Swift](https://img.shields.io/badge/Swift-5.0-orange.svg?style=flat)](https://swift.org/)
