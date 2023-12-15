@@ -143,8 +143,8 @@ public class Socket: PhoenixTransportDelegate {
   var stateChangeCallbacks: StateChangeCallbacks = StateChangeCallbacks()
   
   /// Collection on channels created for the Socket
-  public internal(set) var channels: [Channel] = []
-  
+  public internal(set) var channels: SynchronizedArray<Channel> = .init()
+
   /// Buffers messages that need to be sent once the socket has connected. It is an array
   /// of tuples, with the ref of the message to send and the callback that will send the message.
   var sendBuffer: [(ref: String?, callback: () throws -> ())] = []
@@ -776,12 +776,11 @@ public class Socket: PhoenixTransportDelegate {
   
   // Leaves any channel that is open that has a duplicate topic
   internal func leaveOpenTopic(topic: String) {
-    guard
-      let dupe = self.channels.first(where: { $0.topic == topic && ($0.isJoined || $0.isJoining) })
-    else { return }
-    
-    self.logItems("transport", "leaving duplicate topic: [\(topic)]" )
-    dupe.leave()
+    let dupes = self.channels.filter({ $0.topic == topic && ($0.isJoined || $0.isJoining) })
+    dupes.forEach { dupe in
+      self.logItems("transport", "leaving duplicate topic: [\(topic)]" )
+      dupe.leave()
+    }
   }
   
   //----------------------------------------------------------------------
