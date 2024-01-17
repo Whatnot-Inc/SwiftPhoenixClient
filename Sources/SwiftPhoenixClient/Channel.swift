@@ -72,7 +72,7 @@ public class Channel {
   weak var socket: Socket?
   
   /// Current state of the Channel
-  var state: ChannelState
+  public var state: ChannelState
   
   /// Collection of event bindings
   var syncBindingsDel: SynchronizedArray<Binding>
