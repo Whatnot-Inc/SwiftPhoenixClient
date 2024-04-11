@@ -13,13 +13,16 @@ public extension Socket {
         guard isConnected else {
             return
         }
-        let heartbeat = makeHeartbeat(timeout: timeout)
-        heartbeat.receive("timeout") { [weak self] _ in
-            self?.abnormalClose("manual heartbeat timeout (\(timeout))")
-        }
-        heartbeat.receive("error") { [weak self] message in
-            self?.abnormalClose("manual heartbeat error (\(message.payload))")
-        }
+        let heartbeat = makeHeartbeat(
+            timeout: timeout
+        )
+            .receive("timeout") { [weak self] _ in
+                self?.abnormalClose("manual heartbeat timeout (\(timeout))")
+            }
+            .receive("error") { [weak self] message in
+                self?.abnormalClose("manual heartbeat error (\(message.payload))")
+            }
+        heartbeat.send()
     }
 }
 
