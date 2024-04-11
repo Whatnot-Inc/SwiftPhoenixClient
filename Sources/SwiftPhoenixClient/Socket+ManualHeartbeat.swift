@@ -13,22 +13,31 @@ public extension Socket {
         guard isConnected else {
             return
         }
-        let channel = Channel(
-            topic: "phoenix",
-            socket: self
-        )
+
+        // Make channel with Socket API to receive messages.
+        // The "phoenix" channel must not be joined or left.
+        // When done using channel – make sure to remove it from the channels list.
+        let channel = channel("phoenix")
+
         let heartbeat = Push(
             channel: channel,
             event: ChannelEvent.heartbeat,
             timeout: timeout
         )
-            .receive("timeout") { [weak self] _ in
-                self?.abnormalClose("manual heartbeat timeout (\(timeout))")
-                _ = channel // retain channel for the lifetime of heartbeat
+            .receive("ok") { [weak self] _ in
+                self?.channels.removeAll { $0 === channel }
             }
             .receive("error") { [weak self] message in
+                self?.channels.removeAll { $0 === channel }
                 self?.abnormalClose("manual heartbeat error (\(message.payload))")
             }
+            .receive("timeout") { [weak self] _ in
+                self?.channels.removeAll { $0 === channel }
+                self?.abnormalClose("manual heartbeat timeout (\(timeout))")
+            }
+        
+        // Channel that is not joined won't allow sending messages.
+        // Send the heartbeat directly instead.
         heartbeat.send()
     }
 }
