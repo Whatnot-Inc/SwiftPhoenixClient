@@ -13,28 +13,22 @@ public extension Socket {
         guard isConnected else {
             return
         }
-        let heartbeat = makeHeartbeat(
+        let channel = Channel(
+            topic: "phoenix",
+            socket: self
+        )
+        let heartbeat = Push(
+            channel: channel,
+            event: ChannelEvent.heartbeat,
             timeout: timeout
         )
             .receive("timeout") { [weak self] _ in
                 self?.abnormalClose("manual heartbeat timeout (\(timeout))")
+                _ = channel // retain channel for the lifetime of heartbeat
             }
             .receive("error") { [weak self] message in
                 self?.abnormalClose("manual heartbeat error (\(message.payload))")
             }
         heartbeat.send()
-    }
-}
-
-private extension Socket {
-    func makeHeartbeat(timeout: TimeInterval) -> Push {
-        Push(
-            channel: Channel(
-                topic: "phoenix",
-                socket: self
-            ),
-            event: ChannelEvent.heartbeat,
-            timeout: timeout
-        )
     }
 }
