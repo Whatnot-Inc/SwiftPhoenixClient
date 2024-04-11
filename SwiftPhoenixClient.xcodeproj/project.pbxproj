@@ -191,7 +191,6 @@
 		128143AC25410DF3008615A7 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				EAD1666D2BC7D8950022B608 /* CustomExtensions */,
 				128143AE25410DF3008615A7 /* SwiftPhoenixClient */,
 				128143AF25410DF3008615A7 /* Supporting Files */,
 			);
@@ -205,6 +204,7 @@
 				12991DFA254C3EB800BB8650 /* Defaults.swift */,
 				12991DFC254C3ED300BB8650 /* Delegated.swift */,
 				12991DFE254C3EF900BB8650 /* HeartbeatTimer.swift */,
+				EAD1666E2BC7D8E20022B608 /* Socket+ManualHeartbeat.swift */,
 				12991E06254C3F4B00BB8650 /* Message.swift */,
 				12991E08254C3F5B00BB8650 /* Presence.swift */,
 				12991E02254C3F2300BB8650 /* Push.swift */,
@@ -311,14 +311,6 @@
 				63F0F58C2592E44800C904FB /* ChatRoomViewController.swift */,
 			);
 			path = chatroom;
-			sourceTree = "<group>";
-		};
-		EAD1666D2BC7D8950022B608 /* CustomExtensions */ = {
-			isa = PBXGroup;
-			children = (
-				EAD1666E2BC7D8E20022B608 /* Socket+ManualHeartbeat.swift */,
-			);
-			path = CustomExtensions;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
